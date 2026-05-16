@@ -7,7 +7,7 @@ app = Flask(__name__)
 @app.get('/all-bookings')
 def all_bookings():
     # 1. Ambil semua pesanan dari booking_db
-    bookings = fetch_all("BOOKING_DB_NAME", "SELECT * FROM pesanan")
+    bookings = fetch_all("booking_db", "SELECT * FROM pesanan")
     
     results = []
     for b in bookings:
