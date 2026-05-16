@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 import requests
 import datetime
+from PIL import Image
 
 # --- 1. SET CONFIG ---
+icon_gambar = Image.open("./src/images/logo.png")
 st.set_page_config(
     page_title="KeepIn Partner Console",
-    page_icon="🟢",
+    page_icon=icon_gambar,
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -17,15 +19,15 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
     
     /* Reset & Base */
-    .block-container { padding: 2rem 4rem !important; max-width: 1200px; margin: 0 auto; }
+    .block-container { padding: 0rem !important; max-width: 100% !important; }
     [data-testid="stSidebar"] { background-color: #1F2937 !important; color: white !important; }
     [data-testid="stSidebar"] * { color: white !important; font-family: 'Inter', sans-serif; }
-    .stApp { background-color: #F8FAFC; }
+    .stApp { background-color: #FFFFFF; }
     
     /* Typography */
     h1, h2, h3, .brand-font {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
-        letter-spacing: -0.02em !important;
+        letter-spacing: -0.04em !important;
     }
     
     p, span, label, .stMarkdown {
@@ -37,24 +39,31 @@ st.markdown("""
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 2rem;
+        margin-bottom: 3rem;
     }
     .brand-logo {
-        background-color: #4FBFA5;
+        background-color: #10B981;
         color: white;
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 800;
-        font-size: 20px;
+        font-size: 22px;
     }
     .brand-name {
         font-weight: 800;
-        font-size: 24px;
+        font-size: 28px;
         color: #1F2937;
+    }
+
+    /* Auth Layout Containers */
+    .auth-form-container {
+        padding: 10vh 8vw;
+        max-width: 650px;
+        margin-left: auto;
     }
 
     /* Bento Cards */
@@ -62,82 +71,86 @@ st.markdown("""
         background: white;
         padding: 24px;
         border-radius: 24px;
-        border: 1px solid #E5E7EB;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border: 1px solid #F1F5F9;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
         margin-bottom: 20px;
         transition: all 0.3s ease;
     }
     .bento-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        border-color: #4FBFA5;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: #10B981;
     }
     
     .metric-label {
         font-size: 13px;
         font-weight: 700;
-        color: #6B7280;
+        color: #94A3B8;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.1em;
         margin-bottom: 8px;
     }
     .metric-value {
-        font-size: 36px;
+        font-size: 38px;
         font-weight: 800;
-        color: #1F2937;
+        color: #0F172A;
         margin-bottom: 4px;
     }
-    .metric-delta {
-        font-size: 14px;
-        font-weight: 600;
-    }
-    .delta-up { color: #10B981; }
-    .delta-down { color: #EF4444; }
 
     /* Forms & Inputs */
+    div[data-testid="stTextInput"] label p {
+        font-weight: 700 !important;
+        color: #0F172A !important;
+        font-size: 14px !important;
+        margin-bottom: 8px !important;
+    }
     div[data-testid="stTextInput"] input {
-        border-radius: 12px !important;
-        border: 1px solid #E5E7EB !important;
-        padding: 12px 16px !important;
+        border-radius: 16px !important;
+        border: 2px solid #F1F5F9 !important;
+        padding: 16px 20px !important;
         font-size: 16px !important;
+        background-color: #F8FAFC !important;
+    }
+    div[data-testid="stTextInput"] input:focus {
+        border-color: #10B981 !important;
     }
     
     /* Buttons */
     .stButton > button {
-        border-radius: 12px !important;
-        padding: 0.6rem 1.5rem !important;
-        font-weight: 700 !important;
-        transition: all 0.2s !important;
+        border-radius: 16px !important;
+        padding: 0.8rem 2rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.02em !important;
+        transition: all 0.3s !important;
     }
     .main-button > div > button {
-        background-color: #1F2937 !important;
+        background-color: #0F172A !important;
         color: white !important;
         width: 100%;
         border: none !important;
+        height: 64px !important;
+        font-size: 18px !important;
     }
     .main-button > div > button:hover {
-        background-color: #4FBFA5 !important;
-        transform: scale(1.02);
+        background-color: #10B981 !important;
+        box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
     }
     
-    /* Sidebar Navigation Fixes */
-    .st-emotion-cache-1ecpynv { background-color: #374151 !important; margin: 4px 0; border-radius: 8px !important; }
-    .st-emotion-cache-1ecpynv:hover { background-color: #4FBFA5 !important; }
-
     /* Health Indicator */
     .health-badge {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        border-radius: 20px;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 12px;
         font-size: 12px;
         font-weight: 700;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         width: 100%;
+        border: 1px solid rgba(255,255,255,0.05);
     }
-    .health-online { background-color: #D1FAE5; color: #065F46; }
-    .health-offline { background-color: #FEE2E2; color: #991B1B; }
+    .health-online { background-color: rgba(16, 185, 129, 0.1); color: #34D399; }
+    .health-offline { background-color: rgba(239, 68, 68, 0.1); color: #F87171; }
 
     /* Role Selector */
     .role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0; }
@@ -191,37 +204,36 @@ def call_service(service, endpoint, method="GET", payload=None):
 # --- 5. AUTHENTICATION PAGES ---
 if not st.session_state.authenticated:
     
-    # Simple Layout for Auth
-    c1, spacer, c2 = st.columns([1.2, 0.2, 1.3])
+    # Custom Full-Screen Split Layout
+    c_form, c_banner = st.columns([1, 1])
     
-    with c1:
+    with c_form:
+        st.markdown('<div class="auth-form-container">', unsafe_allow_html=True)
         st.markdown("""
-            <div style="padding-top: 4rem;">
-                <div class="brand-header">
-                    <div class="brand-logo">K</div>
-                    <div class="brand-name">KeepIn <span style="color:#94A3B8; font-weight:500; font-size:16px;">Partner</span></div>
-                </div>
+            <div class="brand-header">
+                <div class="brand-logo">K</div>
+                <div class="brand-name">KeepIn <span style="color:#94A3B8; font-weight:500; font-size:16px;">Console</span></div>
+            </div>
         """, unsafe_allow_html=True)
         
         if st.session_state.auth_page == 'Login':
-            st.markdown("<h1>Selamat Datang Kembali 👋</h1>", unsafe_allow_html=True)
-            st.markdown("<p style='color:#64748B; margin-bottom: 2rem;'>Masuk untuk mengelola loker dan memantau bisnis Anda.</p>", unsafe_allow_html=True)
+            st.markdown("<h1 style='font-size:42px !important; margin-bottom:12px;'>Selamat Datang Kembali 👋</h1>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#64748B; font-size:18px; margin-bottom: 3rem;'>Monitor dan kelola ekosistem loker Anda dalam satu dashboard terintegrasi.</p>", unsafe_allow_html=True)
             
             # Role Selection UI
-            st.markdown("<p style='font-weight:700; font-size:12px; color:#94A3B8; text-transform:uppercase;'>Pilih Peran</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-weight:800; font-size:12px; color:#1F2937; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:16px;'>Identitas Anda</p>", unsafe_allow_html=True)
             roles = [("Mitra", "🟢", "mitra"), ("Penyewa", "🎒", "penyewa"), ("Admin", "🛡️", "admin")]
             
-            cols = st.columns(3)
+            role_cols = st.columns(3)
             for i, (name, icon, val) in enumerate(roles):
                 is_active = st.session_state.selected_role == val
-                with cols[i]:
-                    if st.button(f"{icon}\n{name}", key=f"role_{val}", use_container_width=True, 
-                                 type="secondary" if not is_active else "primary"):
+                with role_cols[i]:
+                    if st.button(f"{icon} {name}", key=f"role_{val}", use_container_width=True):
                         st.session_state.selected_role = val
                         st.rerun()
             
             st.write("\n")
-            email = st.text_input("EMAIL", placeholder="your@email.com")
+            email = st.text_input("EMAIL", placeholder="username@corporate.com")
             password = st.text_input("KATA SANDI", type="password", placeholder="••••••••")
             
             st.write("\n")
@@ -239,17 +251,28 @@ if not st.session_state.authenticated:
                         st.error("Kredensial tidak valid atau server offline.")
             st.markdown('</div>', unsafe_allow_html=True)
             
-            st.markdown("<div style='text-align:center; margin-top:20px;'><p style='color:#64748B;'>Belum punya akun? <a href='#' style='color:#4FBFA5; font-weight:700;'>Hubungi Admin</a></p></div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align:center; margin-top:32px;'><p style='color:#64748B; font-weight:500;'>Masalah akses? <a href='#' style='color:#10B981; font-weight:700; text-decoration:none;'>Hubungi Helpdesk</a></p></div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    with c2:
-        # Illustration / Banner Area
+    with c_banner:
+        # High Resolution Illustration Banner
         st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #1F2937 0%, #111827 100%); height: 85vh; border-radius: 40px; padding: 60px; color: white; display:flex; flex-direction:column; justify-content:center;">
-                <h1 style="color:white; font-size:48px !important; margin-bottom:24px;">Digitalkan Penitipan Barang <span style="color:#6FD3B1;">Sekarang.</span></h1>
-                <p style="color:#94A3B8; font-size:18px; line-height:1.6; margin-bottom:40px;">Platform manajemen loker pintar berbasis IoT pertama di Indonesia. Aman, Cepat, dan Terpercaya.</p>
-                <div style="background: rgba(255,255,255,0.05); padding: 24px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);">
-                    <div style="color:#6FD3B1; font-weight:800; font-size:14px; margin-bottom:4px;">PROMO MITRA BARU</div>
-                    <div style="font-weight:700; font-size:18px;">Komisi 0% untuk 3 bulan pertama.</div>
+            <div style="background: linear-gradient(165deg, #0F172A 0%, #1E293B 100%); height: 100vh; padding: 10vh 8vw; color: white; display:flex; flex-direction:column; justify-content:center; border-left: 1px solid rgba(255,255,255,0.05);">
+                <div style="background-color: rgba(16, 185, 129, 0.1); color: #10B981; padding: 6px 14px; border-radius: 8px; font-weight: 800; font-size: 13px; letter-spacing: 0.1em; display: inline-block; width: fit-content; margin-bottom: 32px;">KEEPIN IOT SOLUTIONS</div>
+                <h1 style="color:white; font-size:64px !important; line-height:1; margin-bottom:24px;">Revolusi <br><span style="color:#10B981;">Logistik</span> Mikro.</h1>
+                <p style="color:#94A3B8; font-size:20px; line-height:1.7; margin-bottom:48px; max-width: 500px;">Platform manajemen penitipan barang pintar yang menghubungkan perangkat IoT dengan sistem pembayaran dan inventori secara real-time.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div style="background: rgba(255,255,255,0.03); padding: 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="font-size: 32px; margin-bottom: 8px;">📊</div>
+                        <div style="font-weight:800; font-size:18px; color:white; margin-bottom:4px;">Smart Inventory</div>
+                        <p style="color:#64748B; font-size:14px; margin:0;">Pantau ketersediaan unit di ribuan cabang secara instan.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); padding: 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="font-size: 32px; margin-bottom: 8px;">🔐</div>
+                        <div style="font-weight:800; font-size:18px; color:white; margin-bottom:4px;">IoT Encryption</div>
+                        <p style="color:#64748B; font-size:14px; margin:0;">Teknologi enkripsi mutakhir untuk keamanan akses loker fisik.</p>
+                    </div>
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -297,67 +320,60 @@ else:
             st.rerun()
 
     # --- MAIN CONTENT ---
+    # Container with padding for non-auth pages
+    st.markdown('<div style="padding: 3rem 5vw;">', unsafe_allow_html=True)
+    
     if st.session_state.curr_page == "Dashboard":
-        row1 = st.columns([2, 1])
-        with row1[0]:
-            st.markdown(f"<h1>Hai, {st.session_state.user_info['nama']}! 👋</h1>", unsafe_allow_html=True)
-            st.markdown("<p style='color:#64748B; font-size:18px;'>Berikut adalah ringkasan performa unit loker Anda hari ini.</p>", unsafe_allow_html=True)
-        with row1[1]:
-            st.markdown("<div style='text-align:right;'><p style='color:#94A3B8; font-weight:700; font-size:14px;'>PERIODE</p><h3 style='margin-top:-5px;'>Mei 2026</h3></div>", unsafe_allow_html=True)
+        row_h = st.columns([2, 1])
+        with row_h[0]:
+            st.markdown(f"<h1 style='font-size:48px !important; margin-bottom:8px;'>Dashboard Utama</h1>", unsafe_allow_html=True)
+            st.markdown(f"<p style='color:#64748B; font-size:20px;'>Selamat datang kembali, <b>{st.session_state.user_info['nama']}</b>.</p>", unsafe_allow_html=True)
+        with row_h[1]:
+            st.markdown("<div style='text-align:right;'><div style='background:#F1F5F9; padding:12px 24px; border-radius:12px; display:inline-block;'><p style='color:#94A3B8; font-weight:800; font-size:11px; margin:0; text-transform:uppercase;'>LOKASI DATA</p><h4 style='margin:0; font-weight:800; color:#0F172A;'>Cloud Cluster Jakarta</h4></div></div>", unsafe_allow_html=True)
 
-        st.write("\n")
+        st.write("\n" * 2)
         
-        # Stats Grid
+        # Logic to fetch real data
         res_i = call_service("inventory", "/loker-all")
         res_b = call_service("booking", "/booking")
         
-        total_loker = len(res_i.json()) if res_i else 12
-        available = len([l for l in res_i.json() if l.get('status_loker') == 'Tersedia']) if res_i else 8
-        total_bookings = len(res_b.json()) if res_b else 156
+        inv_data = res_i.json() if res_i else []
+        total_loker = len(inv_data)
+        available = len([l for l in inv_data if l.get('status_loker') == 'Tersedia'])
+        total_bookings = len(res_b.json()) if res_b else 0
         
-        m1, m2, m3, m4 = st.columns(4)
-        with m1:
-            st.markdown(f"""
-                <div class="bento-card">
-                    <div class="metric-label">Pendapatan (IDR)</div>
-                    <div class="metric-value">4.2M</div>
-                    <div class="metric-delta delta-up">↑ 12% vs bln lalu</div>
-                </div>
-            """, unsafe_allow_html=True)
-        with m2:
-            st.markdown(f"""
-                <div class="bento-card">
-                    <div class="metric-label">Unit Loker</div>
-                    <div class="metric-value">{total_loker}</div>
-                    <div class="metric-delta" style="color:#94A3B8;">Total Kapasitas</div>
-                </div>
-            """, unsafe_allow_html=True)
-        with m3:
-            st.markdown(f"""
-                <div class="bento-card">
-                    <div class="metric-label">Tersedia</div>
-                    <div class="metric-value" style="color:#10B981;">{available}</div>
-                    <div class="metric-delta delta-up">Ready to use</div>
-                </div>
-            """, unsafe_allow_html=True)
-        with m4:
-            st.markdown(f"""
-                <div class="bento-card">
-                    <div class="metric-label">Transaksi</div>
-                    <div class="metric-value">{total_bookings}</div>
-                    <div class="metric-delta delta-up">↑ 48 hari ini</div>
-                </div>
-            """, unsafe_allow_html=True)
+        # Stats Grid
+        m_cols = st.columns(4)
+        stats = [
+            ("TOTAL PENDAPATAN", "Rp 4.2M", "↑ 12%", "delta-up"),
+            ("UNIT LOKER", str(total_loker), "Active", "delta-up"),
+            ("READY TO BOOK", str(available), "Units", "delta-up"),
+            ("HITS TRANSAKSI", str(total_bookings), "Lifetime", "delta-up")
+        ]
+        
+        for i, (label, val, delta, d_cls) in enumerate(stats):
+            with m_cols[i]:
+                st.markdown(f"""
+                    <div class="bento-card">
+                        <div class="metric-label">{label}</div>
+                        <div class="metric-value">{val}</div>
+                        <div class="metric-delta {d_cls}">{delta}</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
         st.write("\n")
         
         # Table Section
-        st.markdown("<h3>Unit Cabang Teraktif</h3>", unsafe_allow_html=True)
-        if res_i and res_i.status_code == 200:
-            df = pd.DataFrame(res_i.json())
+        st.markdown("<h3 style='margin-bottom:24px;'>Aktivitas Unit Terkini</h3>", unsafe_allow_html=True)
+        if inv_data:
+            df = pd.DataFrame(inv_data)
             st.dataframe(df, use_container_width=True, hide_index=True)
         else:
-            st.info("Menunggu data dari Inventory Microservice...")
+            st.markdown("""
+                <div style="background:#F8FAFC; padding:60px; border-radius:24px; text-align:center; border: 2px dashed #E2E8F0;">
+                    <p style="color:#94A3B8; font-weight:700; font-size:18px;">Menghubungkan ke Inventory microservice...</p>
+                </div>
+            """, unsafe_allow_html=True)
 
     elif st.session_state.curr_page == "Laporan Transaksi":
         st.markdown("<h1>Laporan Keuangan 📊</h1>", unsafe_allow_html=True)
@@ -378,3 +394,4 @@ else:
 
     else:
         st.info("Halaman ini sedang dalam pengembangan.")
+    st.markdown('</div>', unsafe_allow_html=True)
