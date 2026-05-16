@@ -10,3 +10,7 @@ python-dotenv
 plotly
 streamlit
 pymysql
+fastapi
+uvicorn
+passlib[bcrypt]
+pydantic[email]

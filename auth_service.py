@@ -1,67 +1,60 @@
-import os
-from flask import Flask, jsonify, request
-from database import fetch_one, get_auth_db_conn
+# auth_service.py
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, EmailStr
+from passlib.context import CryptContext
 
-app = Flask(__name__)
+# Import fungsi dari file database.py milikmu
+from database import get_auth_db_conn, fetch_one
 
-# ENDPOINT 1: Mengambil Data Profil User Berdasarkan ID (Sudah ada sebelumnya)
-@app.route('/user/<int:id_user>', methods=['GET'])
-def get_user(id_user):
+app = FastAPI(title="KeepIn Auth Service")
+
+# Konfigurasi untuk verifikasi password yang di-hash (Bcrypt)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# ==================== VALIDASI DATA (PYDANTIC) ====================
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+    role: str
+
+# ==================== ENDPOINT API ====================
+@app.post("/api/auth/login")
+def login(data: LoginRequest):
+    # 1. Query mencari user berdasarkan email menggunakan helper milikmu
+    # Sesuaikan nama kolom ('email', 'password', 'role') dengan yang ada di tabel database-mu
+    query = "SELECT email, password, role FROM users WHERE email = %s"
+    
     try:
-        user = fetch_one(get_auth_db_conn, "SELECT id_user, nama, email, no_hp, role FROM users WHERE id_user = %s", (id_user,))
-        return jsonify(user) if user else (jsonify({"error": "User Not Found"}), 404)
+        # Menembak fungsi helper fetch_one bawaan database.py kamu
+        user = fetch_one(get_auth_db_conn, query, (data.email,))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# ENDPOINT 2: Autentikasi Login (BARU)
-@app.route('/login', methods=['POST'])
-def login():
-    try:
-        data = request.json
-        email = data.get('email')
-        password = data.get('password')
-        role = data.get('role') # 'mitra', 'penyewa', atau 'admin'
-
-        # Query pencocokan kredensial dasar
-        query = "SELECT id_user, nama, email, role FROM users WHERE email = %s AND password_hash = %s AND LOWER(role) = %s"
-        user = fetch_one(get_auth_db_conn, query, (email, password, role.lower()))
+        raise HTTPException(status_code=500, detail=f"Gagal terhubung ke database: {str(e)}")
+    
+    # 2. Cek apakah user ditemukan
+    if not user:
+        raise HTTPException(status_code=404, detail="Email tidak terdaftar")
+    
+    # 3. Validasi password yang di-hash
+    # Catatan: Jika password di DB kamu masih teks biasa (plain text), ganti bagian ini dengan:
+    # if user['password'] != data.password:
+    if not pwd_context.verify(data.password, user['password']):
+        raise HTTPException(status_code=401, detail="Kata sandi salah")
         
-        if user:
-            return jsonify({"status": "success", "user": user}), 200
-        return jsonify({"status": "fail", "message": "Email, password, atau role tidak sesuai"}), 401
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# ENDPOINT 3: Pendaftaran Akun Baru / Sign Up (BARU)
-@app.route('/register', methods=['POST'])
-def register():
-    try:
-        data = request.json
-        nama = data.get('nama')
-        email = data.get('email')
-        password = data.get('password')
-        no_hp = data.get('no_hp', '')
-        role = data.get('role', 'mitra')
-
-        conn = get_auth_db_conn()
-        cur = conn.cursor()
+    # 4. Validasi kesesuaian Role
+    if user['role'].lower() != data.role.lower():
+        raise HTTPException(status_code=403, detail="Role tidak sesuai untuk akun ini")
         
-        # Cek apakah email sudah terdaftar
-        cur.execute("SELECT id_user FROM users WHERE email = %s", (email,))
-        if cur.fetchone():
-            return jsonify({"status": "fail", "message": "Email sudah terdaftar!"}), 400
+    # Jika sukses, kembalikan response
+    return {
+        "status": "success",
+        "message": "Login berhasil",
+        "token": f"mock-jwt-token-for-{user['role']}-{user['email']}",
+        "user": {
+            "email": user['email'],
+            "role": user['role']
+        }
+    }
 
-        # Insert user baru ke database auth
-        query = "INSERT INTO users (nama, email, password_hash, no_hp, role) VALUES (%s, %s, %s, %s, %s) RETURNING id_user"
-        cur.execute(query, (nama, email, password, no_hp, role.lower()))
-        new_id = cur.fetchone()[0]
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        return jsonify({"status": "success", "message": "User berhasil didaftarkan", "id_user": new_id}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
