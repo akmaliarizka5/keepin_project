@@ -7,3 +7,6 @@ matplotlib
 psycopg2-binary
 sqlalchemy
 python-dotenv
+plotly
+streamlit
+pymysql
