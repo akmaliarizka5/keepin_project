@@ -1,20 +1,22 @@
 # app.py
-from tkinter import Image
+from PIL import Image
 import streamlit as st
 import requests
+from io import BytesIO
+import base64
 
 # URL Endpoint Microservice Auth
 AUTH_SERVICE_URL = "http://127.0.0.1:8000/api/auth/login"
 
-icon_logo = Image.open("./src/images/logo.png")
+icon_img = Image.open("./src/images/icon.png")
 st.set_page_config(
     page_title="KeepIn - Masuk ke Akun",
-    page_icon=icon_logo,
+    page_icon=icon_img,
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS (Sama seperti sebelumnya)
+# Custom CSS
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] { font-family: 'Inter', sans-serif; }
@@ -32,6 +34,18 @@ st.markdown("""
     .feature-desc { font-size: 13px; color: #64748B; margin-top: 2px; }
     div.row-widget.stButton > button { width: 100%; background-color: #1E293B; color: white; font-weight: 600; padding: 12px; border-radius: 8px; border: none; margin-top: 20px; }
     div.row-widget.stButton > button:hover { background-color: #0F172A; color: white; }
+    
+    .register-text {
+        text-align: center;
+        font-size: 14px;
+        color: #64748B;
+        margin-top: 15px;
+    }
+    .register-link {
+        color: #52D1A2;
+        text-decoration: none;
+        font-weight: 600;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -39,17 +53,37 @@ col_left, col_space, col_right = st.columns([1.2, 0.2, 1.2])
 
 # ==================== SISI KIRI: LOGIN FORM ====================
 with col_left:
-    st.markdown("### 🟢 **KeepIn** <span style='font-size:12px; background-color:#E6F9F2; color:#52D1A2; padding:3px 8px; border-radius:5px; font-weight:bold;'>Mitra</span>", unsafe_allow_html=True)
-    st.write("")
+    def image_to_base64(img):
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        return base64.b64encode(buffer.getvalue()).decode()
+    
+    try:
+        logo_img = Image.open("./src/images/logo.png")
+        logo_base64 = image_to_base64(logo_img)
+        logo_html = f'<img src="data:image/png;base64,{logo_base64}" width="30">'
+    except FileNotFoundError:
+        logo_html = '🟢'
+
+    st.markdown(
+        f"""
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
+            {logo_html}
+            <span style="font-size:24px; font-weight:bold; color:#1E293B;">KeepIn</span>
+            <span style="font-size:12px; background-color:#E6F9F2; color:#52D1A2; padding:3px 8px; border-radius:5px; font-weight:bold;">
+                Mitra
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
     st.markdown('<div class="welcome-title">Selamat datang kembali! 👋</div>', unsafe_allow_html=True)
     st.markdown('<div class="welcome-subtitle">Masuk ke akun Anda untuk mengelola loker, memantau pendapatan, dan meningkatkan performa bisnis.</div>', unsafe_allow_html=True)
     
-    # Pilihan Role Anda
     st.markdown('<div class="form-label">Pilih Role Anda</div>', unsafe_allow_html=True)
     selected_role_idx = st.radio("Role", ["Mitra", "Penyewa", "Admin"], horizontal=True, label_visibility="collapsed")
     
-    # Form Input
     st.markdown('<div class="form-label">Email</div>', unsafe_allow_html=True)
     email = st.text_input("Email", placeholder="Masukkan email Anda", label_visibility="collapsed")
     
@@ -62,12 +96,10 @@ with col_left:
     with col_p2:
         st.markdown("<p style='text-align: right; margin-top: 4px;'><a href='#' style='color:#52D1A2; font-size:14px; text-decoration:none; font-weight:600;'>Lupa kata sandi?</a></p>", unsafe_allow_html=True)
         
-    # AKSI CONNECT MICROSERVICE DI SINI
     if st.button("Masuk ke Akun"):
         if not email or not password:
             st.warning("Harap isi Email dan Kata Sandi terlebih dahulu!")
         else:
-            # Data yang akan dikirim ke microservice
             payload = {
                 "email": email,
                 "password": password,
@@ -75,25 +107,34 @@ with col_left:
             }
             
             try:
-                # Mengirim request POST ke auth_service.py
                 response = requests.post(AUTH_SERVICE_URL, json=payload)
                 
-                # Membaca response JSON dari microservice
-                res_data = response.json()
-                
-                if response.status_code == 200:
+                # PERBAIKAN AMAN: Cek apakah response berupa JSON valid sebelum diekstrak
+                try:
+                    res_data = response.json()
+                except ValueError:
+                    res_data = None
+
+                if response.status_code == 200 and res_data:
                     st.success(f"🎉 {res_data['message']} sebagai {res_data['user']['role']}!")
-                    # Simpan token di session state Streamlit untuk tracking login
                     st.session_state["token"] = res_data["token"]
                     st.session_state["user_email"] = res_data["user"]["email"]
                 else:
-                    # Mengambil pesan error dari HTTPException backend
-                    st.error(f"❌ Login Gagal: {res_data.get('detail', 'Terjadi kesalahan')}")
+                    error_msg = res_data.get('detail', 'Terjadi kesalahan internal') if res_data else response.text
+                    st.error(f"❌ Login Gagal: {error_msg}")
                     
             except requests.exceptions.ConnectionError:
                 st.error("❌ Gagal terhubung ke `auth_service.py`. Pastikan backend service sudah dinyalakan!")
 
-    # Alternatif Login (Sosial Media)
+    st.markdown(
+        """
+        <div class="register-text">
+            Belum punya akun? <a class="register-link" href="#">Daftar sekarang</a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.markdown("<p style='text-align: center; color:#64748B; font-size:12px; font-weight:600; margin-top:30px;'>ATAU MASUK DENGAN</p>", unsafe_allow_html=True)
     col_g1, col_g2 = st.columns([1, 1])
     with col_g1: st.button("🌐 Google", key="btn_google")

@@ -20,23 +20,21 @@ class LoginRequest(BaseModel):
 # ==================== ENDPOINT API ====================
 @app.post("/api/auth/login")
 def login(data: LoginRequest):
-    # 1. Query mencari user berdasarkan email menggunakan helper milikmu
-    # Sesuaikan nama kolom ('email', 'password', 'role') dengan yang ada di tabel database-mu
-    query = "SELECT email, password, role FROM users WHERE email = %s"
+    # 1. PERBAIKAN QUERY: Mengubah password_hash menjadi hashed_password sesuai kolom asli PostgreSQL-mu
+    query = "SELECT email, password_hash AS password, role FROM users WHERE email = %s"
     
     try:
         # Menembak fungsi helper fetch_one bawaan database.py kamu
         user = fetch_one(get_auth_db_conn, query, (data.email,))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal terhubung ke database: {str(e)}")
+        # PERBAIKAN: Mengembalikan HTTP 500 dalam format JSON standar FastAPI agar app.py tidak mengalami JSONDecodeError
+        raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
     
     # 2. Cek apakah user ditemukan
     if not user:
         raise HTTPException(status_code=404, detail="Email tidak terdaftar")
     
     # 3. Validasi password yang di-hash
-    # Catatan: Jika password di DB kamu masih teks biasa (plain text), ganti bagian ini dengan:
-    # if user['password'] != data.password:
     if not pwd_context.verify(data.password, user['password']):
         raise HTTPException(status_code=401, detail="Kata sandi salah")
         
