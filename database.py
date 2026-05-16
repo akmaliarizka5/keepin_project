@@ -37,3 +37,23 @@ def get_payment_db_conn():
         user=os.getenv("PAYMENT_DB_USER"),
         password=os.getenv("PAYMENT_DB_PASS")
     )
+
+# --- FUNGSI HELPER AGAR UTILITY DI ATAS BISA LANGSUNG PAKAI ---
+
+def fetch_one_auth(query, params=None):
+    conn = get_auth_db_conn()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute(query, params)
+    data = cur.fetchone()
+    cur.close()
+    conn.close()
+    return data
+
+def fetch_all_booking(query, params=None):
+    conn = get_booking_db_conn()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute(query, params)
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return data
