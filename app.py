@@ -1,11 +1,12 @@
 # app.py
+from tkinter import Image
 import streamlit as st
 import requests
 
 # URL Endpoint Microservice Auth
 AUTH_SERVICE_URL = "http://127.0.0.1:8000/api/auth/login"
 
-icon_logo = "https://raw.githubusercontent.com/akmaliarizka5/keepin_project/main/src/images/logo.png"
+icon_logo = Image.open("./src/images/logo.png")
 st.set_page_config(
     page_title="KeepIn - Masuk ke Akun",
     page_icon=icon_logo,
