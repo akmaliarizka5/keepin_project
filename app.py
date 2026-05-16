@@ -5,7 +5,7 @@ import pandas as pd
 # Konfigurasi halaman
 st.set_page_config(page_title="KeepIn Admin Panel", layout="wide")
 
-st.title("📂 LokerKu: Integrated Microservices Dashboard")
+st.title("📂 KeepIn: Integrated Microservices Dashboard")
 st.markdown("---")
 
 # Sidebar untuk status sistem
