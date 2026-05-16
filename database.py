@@ -39,9 +39,11 @@ def get_payment_db_conn():
     )
 
 # --- FUNGSI HELPER AGAR UTILITY DI ATAS BISA LANGSUNG PAKAI ---
+# Tambahkan ini di bagian paling bawah file database.py kamu
 
-def fetch_one_auth(query, params=None):
-    conn = get_auth_db_conn()
+def fetch_one(db_conn_func, query, params=None):
+    """Helper untuk mengambil satu data dari fungsi koneksi tertentu"""
+    conn = db_conn_func()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute(query, params)
     data = cur.fetchone()
@@ -49,8 +51,9 @@ def fetch_one_auth(query, params=None):
     conn.close()
     return data
 
-def fetch_all_booking(query, params=None):
-    conn = get_booking_db_conn()
+def fetch_all(db_conn_func, query, params=None):
+    """Helper untuk mengambil banyak data dari fungsi koneksi tertentu"""
+    conn = db_conn_func()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute(query, params)
     data = cur.fetchall()

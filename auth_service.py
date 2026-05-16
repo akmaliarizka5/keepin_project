@@ -1,18 +1,15 @@
 from flask import Flask, jsonify
-from database import get_auth_db_conn, RealDictCursor
+# Import fungsi helper dan fungsi koneksinya
+from database import fetch_one, get_auth_db_conn, RealDictCursor
 
 app = Flask(__name__)
 
 @app.route('/user/<int:id_user>')
 def get_user(id_user):
     try:
-        conn = get_auth_db_conn()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT * FROM penyewa WHERE id_user = %s', (id_user,))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
-        return jsonify(user) if user else (jsonify({"error": "Not Found"}), 404)
+        # Masukkan fungsi koneksi auth sebagai parameter pertama
+        user = fetch_one(get_auth_db_conn, "SELECT * FROM users WHERE id_user = %s", (id_user,))
+        return jsonify(user) if user else (jsonify({"error": "User Not Found"}), 404)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
