@@ -8,6 +8,7 @@ import base64
 # URL Endpoints Microservice Auth
 AUTH_LOGIN_URL = "http://127.0.0.1:8000/api/auth/login"
 AUTH_REGISTER_URL = "http://127.0.0.1:8000/api/auth/register"
+BOOKING_SERVICE_URL = "http://127.0.0.1:8001/api/booking"
 
 try:
     icon_img = Image.open("./src/images/icon.png")
@@ -15,9 +16,25 @@ try:
 except:
     st.set_page_config(page_title="KeepIn - Platform Loker", layout="wide", initial_sidebar_state="collapsed")
 
-# Inisialisasi state halaman aktif (Default: login)
+# ==============================================================================
+# INITIALIZATION STATES (SISTEM NAVIGASI & SESSION)
+# ==============================================================================
 if "current_page" not in st.session_state:
     st.session_state["current_page"] = "login"
+
+if "user_role" not in st.session_state:
+    st.session_state["user_role"] = None
+
+if "user_email" not in st.session_state:
+    st.session_state["user_email"] = None
+
+# Default menu internal ketika pertama kali masuk dashboard
+if "active_menu" not in st.session_state:
+    st.session_state["active_menu"] = "Beranda"
+
+# Cari area inisialisasi state, tambahkan:
+if "id_user" not in st.session_state:
+    st.session_state["id_user"] = None
 
 # Helper konversi gambar ke base64 untuk kustom HTML
 def image_to_base64(img_path):
@@ -59,8 +76,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+
 # ==============================================================================
-# HALAMAN 1: VIEW LOGIN
+# VIEW 1: AUTHENTICATION (LOGIN)
 # ==============================================================================
 if st.session_state["current_page"] == "login":
     col_left, col_space, col_right = st.columns([1.2, 0.2, 1.2])
@@ -71,7 +89,7 @@ if st.session_state["current_page"] == "login":
         st.markdown('<div class="welcome-subtitle">Masuk ke akun Anda untuk mengelola loker, memantau pendapatan, dan meningkatkan performa bisnis.</div>', unsafe_allow_html=True)
         
         st.markdown('<div class="form-label">Pilih Role Anda</div>', unsafe_allow_html=True)
-        selected_role = st.radio("Role", ["Mitra", "Penyewa", "Admin"], horizontal=True, label_visibility="collapsed")
+        selected_role = st.radio("Role", ["Penyewa", "Mitra", "Admin"], horizontal=True, label_visibility="collapsed")
         
         st.markdown('<div class="form-label">Email</div>', unsafe_allow_html=True)
         email = st.text_input("Email Login", placeholder="Masukkan email Anda", label_visibility="collapsed")
@@ -94,11 +112,15 @@ if st.session_state["current_page"] == "login":
                     res_data = response.json() if response.headers.get('content-type') == 'application/json' else None
                     
                     if response.status_code == 200 and res_data:
-                        st.success(f"🎉 {res_data['message']} sebagai {res_data['user']['role']}!")
+                        # SET SESSION STATE APABILA LOGIN SUKSES
                         st.session_state["token"] = res_data["token"]
                         st.session_state["user_email"] = res_data["user"]["email"]
-                        st.session_state["user_role"] = res_data["user"]["role"]
-                        # [NEXT DEVELOPMENT COMMENT]: Arahkan ke halaman internal utama dashboard (beranda_page)
+                        st.session_state["user_role"] = res_data["user"]["role"] # 'Penyewa', 'Mitra', atau 'Admin'
+                        st.session_state["id_user"] = res_data["user"]["id_user"] # <--- SIMPAN ID USER
+                        # REDIRECT SESUAI ROLE KLIEN
+                        st.session_state["current_page"] = "dashboard"
+                        st.session_state["active_menu"] = "Beranda" # Reset menu utama
+                        st.rerun()
                     else:
                         error_msg = res_data.get('detail', 'Terjadi kesalahan internal') if res_data else response.text
                         st.error(f"❌ Login Gagal: {error_msg}")
@@ -106,7 +128,6 @@ if st.session_state["current_page"] == "login":
                     st.error("❌ Gagal terhubung ke `auth_service.py`. Pastikan backend service sudah dinyalakan!")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # LINK TRIGGER UNTUK PINDAH KE HALAMAN DAFTAR/REGISTER
         st.write("")
         if st.button("Belum punya akun? Daftar sekarang", key="go_to_register_btn"):
             st.session_state["current_page"] = "register"
@@ -120,14 +141,14 @@ if st.session_state["current_page"] == "login":
         st.markdown('<div class="feature-box"><div class="feature-icon-2">🔵</div><div><div class="feature-title">Booking Cepat & Praktis</div><div class="feature-desc">Cari loker terdekat dan booking dalam hitungan detik.</div></div></div>', unsafe_allow_html=True)
         st.markdown('<div class="feature-box"><div class="feature-icon-3">🟠</div><div><div class="feature-title">Sistem Aman & Terpercaya</div><div class="feature-desc">Data Anda terlindungi dengan enkripsi berstandar tinggi.</div></div></div>', unsafe_allow_html=True)
 
+
 # ==============================================================================
-# HALAMAN 2: VIEW REGISTRASI (Sesuai rancangan figma register_page.png)
+# VIEW 2: AUTHENTICATION (REGISTER)
 # ==============================================================================
 elif st.session_state["current_page"] == "register":
     col_reg_left, col_reg_space, col_reg_right = st.columns([1.2, 0.1, 1.3])
     
     with col_reg_left:
-        # Sisi Kiri Gelap yang Estetis berisi Informasi Platform (Mencerminkan mockup)
         st.markdown("""
             <div style="background-color: #1E293B; padding: 40px; border-radius: 16px; color: white; min-height: 550px;">
                 <h2 style='color: white; font-weight: 800;'>Mulai kelola loker Anda dengan profesional.</h2>
@@ -189,3 +210,186 @@ elif st.session_state["current_page"] == "register":
                         st.error(f"❌ Registrasi Gagal: {res_data.get('detail', 'Terjadi kesalahan')}")
                 except requests.exceptions.ConnectionError:
                     st.error("❌ Gagal terhubung ke server auth backend.")
+
+
+# ==============================================================================
+# VIEW 3: MAIN INTERNAL DASHBOARD SYSTEM (MULTI-ROLE)
+# ==============================================================================
+elif st.session_state["current_page"] == "dashboard":
+    role_aktif = st.session_state["user_role"]
+    email_user = st.session_state["user_email"]
+
+    # 1. SIDEBAR DYNAMIC ROUTING BERDASARKAN ROLE
+    with st.sidebar:
+        st.markdown(f'<div style="display:flex; align-items:center; gap:10px; margin-bottom: 25px;">{logo_html}<span style="font-size:22px; font-weight:bold; color:#1E293B;">KeepIn <small style="font-size:10px; background:#EEF2FF; color:#4F46E5; padding:2px 6px; border-radius:4px;">{role_aktif.upper()}</small></span></div>', unsafe_allow_html=True)
+        st.write(f"📧 `{email_user}`")
+        st.write("---")
+        
+        # --- PERBAIKAN NO 3: PENENTUAN LIST MENU BERDASARKAN ROLE ---
+        if role_aktif.lower() == "penyewa":
+            list_menu = ["Beranda", "Booking", "Riwayat Booking", "Notifikasi", "Info Promo"]
+        elif role_aktif.lower() == "mitra":
+            list_menu = ["Beranda", "Pendaftaran Usaha", "Laporan Bisnis", "Aktivitas Loker", "Penarikan Saldo"]
+        else: # Default fallback Admin
+            list_menu = ["Beranda", "Manajemen User", "Sistem Server"]
+            
+        # VALIDASI AMAN: Mencegah ValueError jika active_menu sebelumnya tidak ada di dalam list_menu role baru
+        if st.session_state["active_menu"] not in list_menu:
+            st.session_state["active_menu"] = list_menu[0]
+
+        # Tampilkan Navigasi Menu Radio dengan mencocokkan index terkini di session_state
+        pilihan_nav = st.radio(
+            "MAIN MENU", 
+            list_menu, 
+            index=list_menu.index(st.session_state["active_menu"])
+        )
+        st.session_state["active_menu"] = pilihan_nav
+        
+        st.write("---")
+        if st.button("🚪 Keluar / Logout", key="logout_btn"):
+            st.session_state["current_page"] = "login"
+            st.session_state["user_role"] = None
+            st.session_state["user_email"] = None
+            st.session_state["id_user"] = None
+            st.session_state["active_menu"] = "Beranda"
+            st.rerun()
+
+    # 2. RENDER KONTEN DASHBOARD BERDASARKAN MENUNYA
+    menu_aktif = st.session_state["active_menu"]
+    
+    # ---------------- KONTEN KHUSUS: ROLE PENYEWA ----------------
+    if role_aktif.lower() == "penyewa":
+        st.title(f"💼 Portal {role_aktif} — {menu_aktif}")
+        
+        if menu_aktif == "Beranda":
+            st.markdown(f"### Selamat datang kembali, {st.session_state['user_email']}! 👋")
+            st.info("💡 Pilih menu **Booking** di sidebar kiri Anda untuk mulai mencari dan menyewa loker terdekat.")
+            
+        # ==================== KONTEN MENU BOOKING ====================
+        elif menu_aktif == "Booking":
+            st.subheader("📍 Cari dan Pesan Loker Strategis")
+            
+            st.markdown("### Daftar Loker Tersedia di **Kuningan City Mall**")
+            
+            # Membuat grid layout untuk pilihan unit loker
+            col_l1, col_l2, col_l3 = st.columns(3)
+            
+            with col_l1:
+                st.info("📦 **Unit: LK-01**\nTipe: Standard (S)\nHarga: Rp 20.000 / Hari")
+                book_lk01 = st.button("Pilih & Sewa LK-01")
+            with col_l2:
+                st.info("📦 **Unit: LK-02**\nTipe: Medium (M)\nHarga: Rp 35.000 / Hari")
+                book_lk02 = st.button("Pilih & Sewa LK-02")
+            with col_l3:
+                st.info("📦 **Unit: LK-03**\nTipe: Large (L)\nHarga: Rp 50.000 / Hari")
+                book_lk03 = st.button("Pilih & Sewa LK-03")
+                
+            # Logika penentuan klik tombol unit
+            if book_lk01 or book_lk02 or book_lk03:
+                id_terpilih = "LK-01" if book_lk01 else ("LK-02" if book_lk02 else "LK-03")
+                harga_terpilih = 20000.0 if book_lk01 else (35000.0 if book_lk02 else 50000.0)
+                
+                # Simpan sementara di session state
+                st.session_state["temp_id_loker"] = id_terpilled = id_terpilih
+                st.session_state["temp_harga"] = harga_terpilih
+                st.session_state["show_form_konfirmasi"] = True
+
+            # Tampilkan formulir durasi sewa jika salah satu unit loker di klik
+            if st.session_state.get("show_form_konfirmasi"):
+                st.markdown("---")
+                st.write(f"### 📝 Formulir Konfirmasi Sewa Unit **{st.session_state['temp_id_loker']}**")
+                
+                durasi = st.number_input("Durasi Sewa (Hari)", min_value=1, max_value=30, value=1)
+                total_harga = durasi * st.session_state["temp_harga"]
+                
+                st.write(f"**Total Biaya Layanan Sewa:** Rp {total_harga:,.0f}")
+                
+                if st.button("Konfirmasi & Buat Pesanan", type="primary"):
+                    payload_booking = {
+                        "id_user": st.session_state["id_user"],
+                        "id_loker": st.session_state["temp_id_loker"],
+                        "nama_tempat": "Kuningan City Mall",
+                        "durasi_sewa": durasi,
+                        "total_biaya": total_harga
+                    }
+                    
+                    try:
+                        # Menembak ke booking_service.py di port 8001
+                        res = requests.post(f"{BOOKING_SERVICE_URL}/create", json=payload_booking)
+                        if res.status_code == 201:
+                            st.success(f"🎉 {res.json()['message']} ID Booking: {res.json()['booking_id']}")
+                            st.balloons()
+                            st.session_state["show_form_konfirmasi"] = False
+                            
+                            # Otomatis alihkan halaman ke menu riwayat booking
+                            st.session_state["active_menu"] = "Riwayat Booking"
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Gagal melakukan booking: {res.json().get('detail')}")
+                    except Exception as e:
+                        st.error("❌ Gagal terhubung ke `booking_service.py`. Pastikan service port 8001 sudah aktif!")
+
+        # ==================== KONTEN MENU RIWAYAT BOOKING ====================
+        elif menu_aktif == "Riwayat Booking":
+            st.subheader("📜 Riwayat Penggunaan Loker Anda")
+            
+            try:
+                # Ambil data real-time dari booking_db lewat REST API booking_service
+                res = requests.get(f"{BOOKING_SERVICE_URL}/user/{st.session_state['id_user']}")
+                if res.status_code == 200:
+                    daftar_booking = res.json()["data"]
+                    
+                    if not daftar_booking:
+                        st.info("Belum ada transaksi pemesanan loker.")
+                    else:
+                        # Tampilkan daftar riwayat pemesanan dalam bentuk komponen kartu ekspander yang rapi
+                        for b in daftar_booking:
+                            with st.expander(f"📦 Order ID #{b['id_booking']} - {b['nama_tempat']} ({b['status_booking']})"):
+                                st.write(f"- **Unit Loker:** {b['id_loker']}")
+                                st.write(f"- **Tanggal Transaksi:** {b['tgl_booking']}")
+                                st.write(f"- **Durasi Sewa:** {b['durasi_sewa']} Hari")
+                                st.markdown(f"- **Total Bayar:** <span style='color:#52D1A2; font-weight:bold;'>Rp {b['total_biaya']:,.0f}</span>", unsafe_allow_html=True)
+                else:
+                    st.error("❌ Gagal menarik data riwayat booking.")
+            except Exception as e:
+                st.error("❌ Tidak bisa memuat riwayat. Pastikan backend `booking_service.py` (Port 8001) berjalan.")
+                
+        elif menu_aktif == "Notifikasi":
+            st.subheader("🔔 Pemberitahuan Terbaru")
+            st.success("🟢 Akun Anda telah berhasil dikonfirmasi dan aktif di sistem KeepIn.")
+            
+        elif menu_aktif == "Info Promo":
+            st.subheader("🎁 Voucher Promosi Menarik Untuk Anda")
+            st.metric(label="Diskon Akhir Pekan", value="30% OFF", delta="Voucher: KEEPINBARU")
+
+    # ---------------- KONTEN KHUSUS: ROLE MITRA ----------------
+    elif role_aktif.lower() == "mitra":
+        st.title(f"🏢 Panel Dashboard {role_aktif} — {menu_aktif}")
+        
+        if menu_aktif == "Beranda":
+            st.markdown("### Selamat datang kembali, Owner Mitra Bisnis! 📈")
+            col_m1, col_m2, col_m3 = st.columns(3)
+            col_m1.metric("Total Loker Dimiliki", "48 Unit", "+12% Bulan Ini")
+            col_m2.metric("Loker Aktif Disewa", "36 Unit", "Sangat Produktif")
+            col_m3.metric("Total Akumulasi Transaksi", "128 Transaksi", "Grafik Naik")
+            
+        elif menu_aktif == "Pendaftaran Usaha":
+            st.subheader("➕ Daftarkan Titik Lokasi Usaha Loker Baru")
+            st.text_input("Nama Tempat / Usaha Loker")
+            st.text_area("Alamat Lengkap Unit")
+            st.number_input("Jumlah Slot Loker yang Disediakan", min_value=1)
+            st.button("Ajukan Verifikasi Lokasi")
+            
+        elif menu_aktif == "Laporan Bisnis":
+            st.subheader("📊 Analisis Keuangan & Omset Pendapatan")
+            st.write("Grafik laporan laba-rugi bisnis loker Anda akan dikalkulasikan di sini.")
+            
+        elif menu_aktif == "Aktivitas Loker":
+            st.subheader("🔍 Monitoring Real-Time Penggunaan Unit Loker")
+            st.markdown("🟢 **Unit A-01:** Sedang digunakan oleh Budi Santoso (Sisa Waktu: 2 Jam)")
+            st.markdown("⚪ **Unit A-02:** Tersedia (Kosong)")
+            
+        elif menu_aktif == "Penarikan Saldo":
+            st.subheader("💳 Tarik Pendapatan Bisnis Loker")
+            st.metric("Saldo Siap Cair", "Rp 4.520.000")
+            st.button("Tarik Dana ke Rekening Utama")

@@ -83,11 +83,13 @@ def login(data: LoginRequest):
     if user['role'].lower() != data.role.lower():
         raise HTTPException(status_code=403, detail="Role tidak sesuai untuk akun ini")
         
+    # Tambahkan 'id_user' ke dalam response objek 'user'
     return {
         "status": "success",
         "message": "Login berhasil",
         "token": f"mock-jwt-token-for-{user['role']}-{user['email']}",
         "user": {
+            "id_user": user['id_user'],  # <--- PASTIKAN BARIS INI ADA
             "email": user['email'],
             "role": user['role']
         }
