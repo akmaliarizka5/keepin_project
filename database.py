@@ -60,3 +60,17 @@ def fetch_all(db_conn_func, query, params=None):
     cur.close()
     conn.close()
     return data
+
+def execute_query(get_conn_func, query, params=()):
+    """Fungsi helper untuk mengeksekusi INSERT, UPDATE, atau DELETE ke database"""
+    conn = get_conn_func()
+    try:
+        cur = conn.cursor()
+        cur.execute(query, params)
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
