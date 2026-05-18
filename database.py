@@ -22,12 +22,12 @@ def get_booking_db_conn():
         password=os.getenv("BOOKING_DB_PASS")
     )
 
-def get_inventory_db_conn():
+def get_loker_db_conn():
     return psycopg2.connect(
-        host=os.getenv("INVENTORY_DB_HOST"),
-        database=os.getenv("INVENTORY_DB_NAME"),
-        user=os.getenv("INVENTORY_DB_USER"),
-        password=os.getenv("INVENTORY_DB_PASS")
+        host=os.getenv("LOKER_DB_HOST"),
+        database=os.getenv("LOKER_DB_NAME"),
+        user=os.getenv("LOKER_DB_USER"),
+        password=os.getenv("LOKER_DB_PASS")
     )
 
 def get_payment_db_conn():
