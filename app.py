@@ -289,8 +289,8 @@ elif st.session_state["current_page"] == "dashboard":
                 id_terpilih = "LK-01" if book_lk01 else ("LK-02" if book_lk02 else "LK-03")
                 harga_terpilih = 20000.0 if book_lk01 else (35000.0 if book_lk02 else 50000.0)
                 
-                # Simpan sementara di session state
-                st.session_state["temp_id_loker"] = id_terpilled = id_terpilih
+                # PERBAIKAN TYPO: Simpan bersih langsung ke session state tanpa 'id_terpiled'
+                st.session_state["temp_id_loker"] = id_terpilih
                 st.session_state["temp_harga"] = harga_terpilih
                 st.session_state["show_form_konfirmasi"] = True
 

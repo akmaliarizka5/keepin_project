@@ -68,7 +68,8 @@ def register(data: RegisterRequest):
 
 @app.post("/api/auth/login")
 def login(data: LoginRequest):
-    query = "SELECT email, hashed_password AS password, role FROM users WHERE email = %s"
+    # PERBAIKAN: Pastikan id_user ikut ditarik dari database!
+    query = "SELECT id_user, email, hashed_password AS password, role FROM users WHERE email = %s"
     try:
         user = fetch_one(get_auth_db_conn, query, (data.email,))
     except Exception as e:
@@ -83,13 +84,13 @@ def login(data: LoginRequest):
     if user['role'].lower() != data.role.lower():
         raise HTTPException(status_code=403, detail="Role tidak sesuai untuk akun ini")
         
-    # Tambahkan 'id_user' ke dalam response objek 'user'
+    # Mengembalikan response sukses beserta data id_user untuk kebutuhan booking_service
     return {
         "status": "success",
         "message": "Login berhasil",
         "token": f"mock-jwt-token-for-{user['role']}-{user['email']}",
         "user": {
-            "id_user": user['id_user'],  # <--- PASTIKAN BARIS INI ADA
+            "id_user": user['id_user'],  # Sekarang baris ini tidak akan error lagi
             "email": user['email'],
             "role": user['role']
         }
