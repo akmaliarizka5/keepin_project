@@ -1,7 +1,7 @@
 import requests
 import streamlit as st
 
-from services.auth_client import register
+from services.auth_client import parse_response, register
 
 
 def render_register_page():
@@ -59,13 +59,13 @@ def render_register_page():
                 }
                 try:
                     response = register(payload)
-                    res_data = response.json()
+                    res_data, error_msg = parse_response(response)
                     
-                    if response.status_code == 201:
+                    if response.status_code == 201 and res_data:
                         st.success(f"🎉 {res_data['message']}")
                         st.balloons()
                         st.info("Silakan klik 'Kembali ke Login' untuk mencoba akun baru Anda.")
                     else:
-                        st.error(f"❌ Registrasi Gagal: {res_data.get('detail', 'Terjadi kesalahan')}")
+                        st.error(f"❌ Registrasi Gagal: {error_msg}")
                 except requests.exceptions.ConnectionError:
                     st.error("❌ Gagal terhubung ke server auth backend.")

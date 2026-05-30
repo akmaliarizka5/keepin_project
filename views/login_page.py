@@ -1,7 +1,7 @@
 import requests
 import streamlit as st
 
-from services.auth_client import login
+from services.auth_client import login, parse_response
 
 
 def render_login_page(logo_html):
@@ -35,7 +35,7 @@ def render_login_page(logo_html):
                 payload = {"email": email, "password": password, "role": selected_role}
                 try:
                     response = login(payload)
-                    res_data = response.json() if response.headers.get('content-type') == 'application/json' else None
+                    res_data, error_msg = parse_response(response)
                     
                     if response.status_code == 200 and res_data:
                         st.session_state["token"] = res_data["token"]
@@ -46,7 +46,6 @@ def render_login_page(logo_html):
                         st.session_state["active_menu"] = "Beranda"
                         st.rerun()
                     else:
-                        error_msg = res_data.get('detail', 'Terjadi kesalahan internal') if res_data else response.text
                         st.error(f"❌ Login Gagal: {error_msg}")
                 except requests.exceptions.ConnectionError:
                     st.error("❌ Gagal terhubung ke `auth_service.py`. Pastikan backend service sudah dinyalakan!")

@@ -8,6 +8,7 @@ psycopg2-binary
 sqlalchemy
 python-dotenv
 plotly
+pydeck
 streamlit
 pymysql
 fastapi

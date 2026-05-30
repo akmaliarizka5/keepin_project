@@ -1,15 +1,19 @@
 # auth_service.py
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, EmailStr
-from passlib.context import CryptContext
+import bcrypt
 
 # Import fungsi dari file database.py milikmu
-from database import get_auth_db_conn, fetch_one, execute_query # Pastikan execute_query ada di database.py
+from database import get_auth_db_conn, fetch_one
 
 app = FastAPI(title="KeepIn Auth Service")
 
-# Konfigurasi untuk verifikasi password yang di-hash (Bcrypt)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 # ==================== VALIDASI DATA (PYDANTIC) ====================
 class LoginRequest(BaseModel):
@@ -40,7 +44,10 @@ def register(data: RegisterRequest):
         raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
         
     # 2. Hash Password demi keamanan data
-    hashed_pwd = pwd_context.hash(data.password)
+    try:
+        hashed_pwd = hash_password(data.password)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gagal hashing password: {str(e)}")
     
     # 3. Simpan user baru ke database
     # Menyesuaikan penamaan kolom tabel user asli (nama_lengkap, email, no_telp, hashed_password, role)
@@ -78,7 +85,7 @@ def login(data: LoginRequest):
     if not user:
         raise HTTPException(status_code=404, detail="Email tidak terdaftar")
     
-    if not pwd_context.verify(data.password, user['password']):
+    if not verify_password(data.password, user['password']):
         raise HTTPException(status_code=401, detail="Kata sandi salah")
         
     if user['role'].lower() != data.role.lower():
