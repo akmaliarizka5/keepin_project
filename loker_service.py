@@ -11,6 +11,8 @@ def enrich_locker(row, index):
     lokasi = row.get("lokasi") or "Lokasi belum tersedia"
     nama_area = lokasi.split(",")[0].strip()
     jarak_km = round(0.35 + (index * 0.18), 2)
+    latitude = row.get("latitude") if row.get("latitude") is not None else -6.2232 + (index * 0.0031)
+    longitude = row.get("longitude") if row.get("longitude") is not None else 106.8277 + (index * 0.0038)
 
     return {
         **row,
@@ -18,8 +20,8 @@ def enrich_locker(row, index):
         "alamat_ringkas": lokasi,
         "jarak_km": jarak_km,
         "estimasi_menit": max(3, int(jarak_km * 12)),
-        "latitude": -6.2232 + (index * 0.0031),
-        "longitude": 106.8277 + (index * 0.0038),
+        "latitude": float(latitude),
+        "longitude": float(longitude),
         "status_label": "Tersedia" if row.get("status") == "READY" else row.get("status"),
     }
 
@@ -32,7 +34,7 @@ def get_lockers(
     ukuran: str | None = None,
 ):
     query = """
-        SELECT id_loker, id_usaha, tipe_loker, harga_per_jam, lokasi, status
+        SELECT id_loker, id_usaha, tipe_loker, harga_per_jam, lokasi, status, latitude, longitude
         FROM loker
         WHERE status = 'READY'
     """
