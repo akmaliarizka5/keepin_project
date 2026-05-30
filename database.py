@@ -38,6 +38,14 @@ def get_payment_db_conn():
         password=os.getenv("PAYMENT_DB_PASS")
     )
 
+def get_usaha_db_conn():
+    return psycopg2.connect(
+        host=os.getenv("USAHA_DB_HOST"),
+        database=os.getenv("USAHA_DB_NAME"),
+        user=os.getenv("USAHA_DB_USER"),
+        password=os.getenv("USAHA_DB_PASS")
+    )
+
 # --- FUNGSI HELPER AGAR UTILITY DI ATAS BISA LANGSUNG PAKAI ---
 # Tambahkan ini di bagian paling bawah file database.py kamu
 

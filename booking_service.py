@@ -1,21 +1,11 @@
 # booking_service.py
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
-import psycopg2
 from psycopg2.extras import RealDictCursor
-from datetime import date
+
+from database import get_booking_db_conn
 
 app = FastAPI(title="KeepIn Booking Service")
-
-# --- KONEKSI DATABASE BOOKING_DB ---
-def get_booking_db_conn():
-    return psycopg2.connect(
-        host="localhost",
-        port="5432",
-        database="booking_db", # Mengarah ke database khusus booking
-        user="postgres",       # Sesuaikan dengan user PostgreSQL-mu
-        password="password_kamu" # Sesuaikan dengan password PostgreSQL-mu
-    )
 
 # --- SCHEMA REQUEST VALIDATION ---
 class CreateBookingRequest(BaseModel):
@@ -24,20 +14,21 @@ class CreateBookingRequest(BaseModel):
     nama_tempat: str
     durasi_sewa: int
     total_biaya: float
+    metode_bayar: str = "QRIS"
 
 # --- API ENDPOINTS ---
 
 @app.post("/api/booking/create", status_code=status.HTTP_201_CREATED)
 def create_booking(data: CreateBookingRequest):
     insert_query = """
-        INSERT INTO booking (id_user, id_loker, nama_tempat, durasi_sewa, total_biaya, status_booking)
-        VALUES (%s, %s, %s, %s, %s, 'PENDING')
+        INSERT INTO booking (id_user, id_loker, nama_tempat, durasi_sewa, satuan_durasi, total_biaya, status_booking, metode_bayar)
+        VALUES (%s, %s, %s, %s, 'JAM', %s, 'PENDING', %s)
         RETURNING id_booking, status_booking;
     """
     try:
         conn = get_booking_db_conn()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute(insert_query, (data.id_user, data.id_loker, data.nama_tempat, data.durasi_sewa, data.total_biaya))
+        cur.execute(insert_query, (data.id_user, data.id_loker, data.nama_tempat, data.durasi_sewa, data.total_biaya, data.metode_bayar))
         result = cur.fetchone()
         conn.commit()
         cur.close()

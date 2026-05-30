@@ -4,6 +4,7 @@ import pydeck as pdk
 
 from services.booking_client import create_booking
 from services.loker_client import get_lockers
+from services.payment_client import create_payment
 
 DEFAULT_MAP_LATITUDE = -7.7956
 DEFAULT_MAP_LONGITUDE = 110.3695
@@ -25,10 +26,11 @@ def render_booking_css():
     st.markdown("""
         <style>
         .summary-card {
-            background-color: #F8FAFC;
-            border-radius: 12px;
+            background-color: #FFFFFF;
+            border-radius: 18px;
             padding: 20px;
             border: 1px solid #E2E8F0;
+            box-shadow: 0 22px 70px rgba(17,24,39,.08);
         }
         .summary-row {
             display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #475569;
@@ -74,6 +76,22 @@ def render_booking_css():
         .loker-size { font-size: 11px; color: #64748B; font-weight: 900; text-transform: uppercase; }
         .loker-price { font-size: 20px; font-weight: 900; color: #52D1A2; }
         .loker-unit { font-size: 10px; color: #94A3B8; font-weight: 800; }
+        .booking-search-panel {
+            background:#FFFFFF;
+            border:1px solid #E7ECF3;
+            border-radius:20px;
+            padding:18px;
+            box-shadow:0 20px 60px rgba(17,24,39,.06);
+            margin-bottom:18px;
+        }
+        .booking-map-wrap {
+            background:#FFFFFF;
+            border:1px solid #E7ECF3;
+            border-radius:20px;
+            padding:14px;
+            box-shadow:0 22px 70px rgba(17,24,39,.07);
+            margin-top:18px;
+        }
         .map-panel {
             min-height: 650px; border-radius: 8px; border: 1px solid #E2E8F0;
             background-color: #F8FAFC; background-image: radial-gradient(#CBD5E1 1px, transparent 1px);
@@ -113,8 +131,9 @@ def render_booking_css():
 
 def render_booking_locker_selection():
     st.markdown('<div class="welcome-title">Cari Loker Terdekat</div>', unsafe_allow_html=True)
-    st.markdown('<div class="welcome-subtitle">Temukan lokasi penyimpanan aman di area strategis.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="welcome-subtitle">Temukan lokasi penyimpanan aman di area strategis, lengkap dengan map interaktif dan filter harga.</div>', unsafe_allow_html=True)
 
+    st.markdown('<div class="booking-search-panel">', unsafe_allow_html=True)
     col_search, col_button = st.columns([5, 1])
     with col_search:
         search_query = st.text_input(
@@ -134,6 +153,7 @@ def render_booking_locker_selection():
         sort_harga = st.selectbox("Harga", ["Harga Default", "Harga Termurah", "Harga Tertinggi"], label_visibility="collapsed")
     with filter_cols[2]:
         ukuran_filter = st.selectbox("Ukuran", ["Semua", "Small", "Medium", "Large"], label_visibility="collapsed")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     sort_by = "jarak" if sort_jarak == "Jarak Terdekat" else "harga_asc"
     if sort_harga == "Harga Termurah":
@@ -165,7 +185,9 @@ def render_booking_locker_selection():
                             st.rerun()
 
             with map_col:
+                st.markdown('<div class="booking-map-wrap">', unsafe_allow_html=True)
                 render_loker_map(daftar_loker)
+                st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.error("Gagal memuat data dari Loker Service.")
     except Exception:
@@ -321,7 +343,8 @@ def render_booking_confirmation():
                 "id_loker": str(st.session_state["temp_id_loker"]),
                 "nama_tempat": str(st.session_state["temp_lokasi"]),
                 "durasi_sewa": int(durasi),
-                "total_biaya": float(total_harga)
+                "total_biaya": float(total_harga),
+                "metode_bayar": metode_bayar
             }
             
             try:
@@ -329,7 +352,17 @@ def render_booking_confirmation():
                 
                 if res.status_code == 201:
                     data_res = res.json()
-                    st.success(f"{data_res['message']} (ID Transaksi: #{data_res['booking_id']})")
+                    payment_res = create_payment({
+                        "booking_id": int(data_res["booking_id"]),
+                        "amount": float(total_harga),
+                        "method": metode_bayar,
+                    })
+                    if payment_res.status_code == 201:
+                        payment = payment_res.json().get("data", {})
+                        st.success(f"{data_res['message']} Payment: {payment.get('reference')}")
+                    else:
+                        st.success(f"{data_res['message']} (ID Transaksi: #{data_res['booking_id']})")
+                        st.warning("Booking tersimpan, tetapi payment service belum merespons.")
                     st.balloons()
                     st.session_state["booking_step"] = 1
                     st.session_state["active_menu"] = "Riwayat Booking"
