@@ -5,6 +5,9 @@ import pydeck as pdk
 from services.booking_client import create_booking
 from services.loker_client import get_lockers
 
+DEFAULT_MAP_LATITUDE = -7.7956
+DEFAULT_MAP_LONGITUDE = 110.3695
+
 
 def render_booking_page():
     if "booking_step" not in st.session_state:
@@ -116,7 +119,7 @@ def render_booking_locker_selection():
     with col_search:
         search_query = st.text_input(
             "Cari loker",
-            value="Kuningan, Jakarta Selatan",
+            value="Yogyakarta",
             label_visibility="collapsed",
             placeholder="Cari area, mall, atau tipe loker",
         )
@@ -203,15 +206,15 @@ def render_loker_map(daftar_loker):
             "tipe_loker": loker["tipe_loker"],
             "harga_per_jam": float(loker["harga_per_jam"]),
             "jarak_km": float(loker.get("jarak_km", 0)),
-            "latitude": float(loker.get("latitude", -6.2232)),
-            "longitude": float(loker.get("longitude", 106.8277)),
+            "latitude": float(loker.get("latitude", DEFAULT_MAP_LATITUDE)),
+            "longitude": float(loker.get("longitude", DEFAULT_MAP_LONGITUDE)),
         }
         for loker in daftar_loker
     ]
 
     df = pd.DataFrame(map_rows)
-    center_lat = df["latitude"].mean() if not df.empty else -6.2232
-    center_lon = df["longitude"].mean() if not df.empty else 106.8277
+    center_lat = df["latitude"].mean() if not df.empty else DEFAULT_MAP_LATITUDE
+    center_lon = df["longitude"].mean() if not df.empty else DEFAULT_MAP_LONGITUDE
 
     layers = []
     if not df.empty:
@@ -283,12 +286,12 @@ def render_booking_confirmation():
     with col_det_left:
         st.markdown("#### Lokasi Penempatan Fisik Loker")
         st.markdown("""
-            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.307222459998!2d106.8277259747506!3d-6.223165260950669!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f3f4b5003b57%3A0x6bda19a9cf582!2sKuningan%20City!5e0!3m2!1sid!2sid!4v1710000000000!5m2!1sid!2sid" 
+            <iframe src="https://www.google.com/maps?q=Yogyakarta&output=embed" 
             width="100%" height="220" style="border:0; border-radius:12px; margin-bottom:20px;" allowfullscreen="" loading="lazy"></iframe>
         """, unsafe_allow_html=True)
         
         st.markdown("#### Atur Durasi Penggunaan")
-        durasi = st.number_input("Berapa hari Anda ingin menyewa loker ini?", min_value=1, max_value=30, value=1, step=1)
+        durasi = st.number_input("Berapa jam Anda ingin menyewa loker ini?", min_value=1, max_value=24, value=1, step=1)
         
         st.markdown("#### Metode Pembayaran")
         metode_bayar = st.radio("Pilih Opsi Pembayaran:", ["QRIS (Otomatis)", "Transfer Bank Manual", "KeepIn Wallet"], horizontal=True)
@@ -303,8 +306,8 @@ def render_booking_confirmation():
                 <div class="summary-row"><span>Lokasi</span><strong>{st.session_state['temp_lokasi']}</strong></div>
                 <div class="summary-row"><span>ID Loker</span><strong>{st.session_state['temp_id_loker']}</strong></div>
                 <div class="summary-row"><span>Tipe / Ukuran</span><strong>{st.session_state['temp_tipe']}</strong></div>
-                <div class="summary-row"><span>Harga Satuan</span><strong>Rp {st.session_state['temp_harga']:,.0f} / Hari</strong></div>
-                <div class="summary-row"><span>Durasi Kontrak</span><strong>{durasi} Hari</strong></div>
+                <div class="summary-row"><span>Harga Satuan</span><strong>Rp {st.session_state['temp_harga']:,.0f} / Jam</strong></div>
+                <div class="summary-row"><span>Durasi Kontrak</span><strong>{durasi} Jam</strong></div>
                 <div class="summary-row"><span>Metode</span><strong>{metode_bayar}</strong></div>
                 <div class="summary-total"><span>Total Tagihan</span><span>Rp {total_harga:,.0f}</span></div>
             </div>

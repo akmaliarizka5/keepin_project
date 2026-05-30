@@ -6,13 +6,16 @@ from database import get_loker_db_conn
 
 app = FastAPI(title="KeepIn Loker Service")
 
+DEFAULT_LATITUDE = -7.7956
+DEFAULT_LONGITUDE = 110.3695
+
 
 def enrich_locker(row, index):
     lokasi = row.get("lokasi") or "Lokasi belum tersedia"
     nama_area = lokasi.split(",")[0].strip()
     jarak_km = round(0.35 + (index * 0.18), 2)
-    latitude = row.get("latitude") if row.get("latitude") is not None else -6.2232 + (index * 0.0031)
-    longitude = row.get("longitude") if row.get("longitude") is not None else 106.8277 + (index * 0.0038)
+    latitude = row.get("latitude") if row.get("latitude") is not None else DEFAULT_LATITUDE + (index * 0.0031)
+    longitude = row.get("longitude") if row.get("longitude") is not None else DEFAULT_LONGITUDE + (index * 0.0038)
 
     return {
         **row,
