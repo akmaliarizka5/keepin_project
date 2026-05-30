@@ -1,0 +1,4 @@
+AUTH_LOGIN_URL = "http://127.0.0.1:8000/api/auth/login"
+AUTH_REGISTER_URL = "http://127.0.0.1:8000/api/auth/register"
+BOOKING_SERVICE_URL = "http://127.0.0.1:8001/api/booking"
+LOKER_SERVICE_URL = "http://127.0.0.1:8002/api/loker"
